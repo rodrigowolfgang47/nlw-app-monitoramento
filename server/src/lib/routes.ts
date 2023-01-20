@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { prisma } from './prisma'
+import dayjs from 'dayjs'
 
 export async function appRoutes(app:FastifyInstance) {
     app.post('/habits', async (request) => {
@@ -19,5 +20,28 @@ export async function appRoutes(app:FastifyInstance) {
         
         // recebe os parametros title e weekDays
         const { title, weekDays } = createHabitBody.parse(request.body)
+
+        // Cria uma nova data começando no dai de hj, zerando a data de criação
+        const today = dayjs().startOf('day').toDate()
+
+        // Persistindo dados recebidos na tabela
+        await prisma.habit.create({
+            data :{
+                title,
+                created_at: today,
+
+                /* Aqui criamos uma um dado dentro da tabela relacional weekDays,
+                onde estão os dados da semana */
+                
+                weekDays: {
+                    create: weekDays.map(weekDays => {
+                        return {
+                            week_day: weekDays,
+                        }
+                    })
+                }
+
+            }
+        })
     });  
 } 
